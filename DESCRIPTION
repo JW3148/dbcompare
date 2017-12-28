@@ -6,7 +6,7 @@ Author: Jiahe Wang<jhw3148@gmail.com>
 Maintainer: Jiahe Wang <jhw3148@gmail.com>
 Description: Package can be used to compare table accross sql server instances.
     It provides tools to identify table dependency for stored procedure;
-    evaluate data discrepancy across servers;
+    evaluate data discrepancy across servers
 License: MIT
 Encoding: UTF-8
 LazyData: true
