@@ -1,9 +1,10 @@
-#' Get the columns for specified table
+#' Get all columns for a given table
 #'
-#' Takes in name of a table and an instance of a SQL Server.
-#' @server server Name of SQL Server Instance
-#' @db db Name of database
-#' @tbl tbl Name of table
+#' Takes in name of a table, database and the instance of a SQL Server, and return the columns of the table
+#'
+#' @param server Name of SQL Server Instance
+#' @param db Name of database
+#' @param tbl Name of table
 #' @return a vector contains columns of the table
 #' @export
 udf_GetColumns <- function(server, db, tbl) {
@@ -21,6 +22,16 @@ udf_GetColumns <- function(server, db, tbl) {
 }
 
 
+
+#' Get a numerical unique identifier for a given table
+#'
+#' Takes in name of a table, database and the instance of a SQL Server, and return an unique identifer based on data and schema
+#'
+#' @param server Name of SQL Server Instance
+#' @param db Name of database
+#' @param tbl Name of table
+#' @return value of the numerical unique identifer
+#' @export
 udf_GetChecksum <- function(server, db, tbl) {
   col_str <- udf_GetColumns(server,db,tbl)
   query <- paste("select ISNULL(CHECKSUM_AGG(CHECKSUM(__cols__)),0) from ", db, ".dbo.", tbl, sep = "")
@@ -29,6 +40,18 @@ udf_GetChecksum <- function(server, db, tbl) {
   return(res)
 }
 
+
+
+#' Get all the dependent tables for a stored procedure
+#'
+#' Takes in the name of a stored procedure, database and the instance of a SQL Server,
+#'    and return the procedure's dependent tables
+#'
+#' @param server Name of SQL Server Instance
+#' @param db Name of database
+#' @param proc Name of stored procedure
+#' @return a vector contains all dependent tables
+#' @export
 udf_GetTableList <- function(server,db, proc) {
   query <- "select b.referenced_entity_name as tbl_name
   from __db__.sys.objects a
@@ -45,6 +68,18 @@ udf_GetTableList <- function(server,db, proc) {
     return(res)
 }
 
+
+
+#' Get a dictionary of pairs of dependent tables and their identifier, for a given stored procedure
+#'
+#' Takes in the name of a stored procedure, database and the instance of a SQL Server,
+#'     and return a dictionary of key values pairs of dependent tables and corresbonding identifier
+#'
+#' @param server Name of SQL Server Instance
+#' @param db Name of database
+#' @param proc Name of stored procedure
+#' @return a dataframe contains dependent tables and their unique identifier
+#' @export
 udf_CreateChecksumDict <- function(server, db, proc) {
     tablist <- udf_GetTableList(server, db,proc)
     checksumlist <- sapply(tablist, udf_GetChecksum, server = server, db = db)
@@ -52,6 +87,18 @@ udf_CreateChecksumDict <- function(server, db, proc) {
     return(res)
 }
 
+
+
+#' Merge the dictionary of source table and target table
+#'
+#' Takes in a source proc information and target proc information, and return a merged result of their dictionaries
+#'
+#' @param source_server Name of source SQL Server Instance
+#' @param target_server Name of target SQL Server Instance
+#' @param db Name of database
+#' @param proc Name of stored procedure
+#' @return a dataframe contains dependent tables, values of identifier on source server, and values on target server
+#' @export
 udf_MergeSourceTarget <- function(source_server, target_server, db, proc) {
     source <- udf_CreateChecksumDict(source_server, db, proc)
     target <- udf_CreateChecksumDict(target_server, db, proc)
@@ -59,6 +106,19 @@ udf_MergeSourceTarget <- function(source_server, target_server, db, proc) {
     return(st_compare)  ##output is a dataframe
 }
 
+
+
+#' Compare a list of tables on source server and target server
+#'
+#' Takes in source server, target server, database and procedure, and return information on updated tables, new tables,
+#'     missing tables and identical tables
+#'
+#' @param source_server Name of source SQL Server Instance
+#' @param target_server Name of target SQL Server Instance
+#' @param db Name of database
+#' @param proc Name of stored procedure
+#' @return a list contains updated tables, new tables, missing tables and identical tables
+#' @export
 udf_CompareSourceTarget <- function(source_server, target_server, db, proc) {
     m <- udf_MergeSourceTarget(source_server, target_server, db, proc)
     not_in_source <- m[is.na(m$checksumlist.x),]$tablist

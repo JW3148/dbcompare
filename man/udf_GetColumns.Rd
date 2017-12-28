@@ -2,13 +2,20 @@
 % Please edit documentation in R/tblcompare.R
 \name{udf_GetColumns}
 \alias{udf_GetColumns}
-\title{Get the columns for specified table}
+\title{Get all columns for a given table}
 \usage{
 udf_GetColumns(server, db, tbl)
+}
+\arguments{
+\item{server}{Name of SQL Server Instance}
+
+\item{db}{Name of database}
+
+\item{tbl}{Name of table}
 }
 \value{
 a vector contains columns of the table
 }
 \description{
-Takes in name of a table and an instance of a SQL Server.
+Takes in name of a table, database and the instance of a SQL Server, and return the columns of the table
 }
